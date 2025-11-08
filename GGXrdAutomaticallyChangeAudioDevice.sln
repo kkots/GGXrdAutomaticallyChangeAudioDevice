@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{17858A53-E775-44A2-ACD4-B505B1696148}"
 	ProjectSection(SolutionItems) = preProject
 		prebuild.ps1 = prebuild.ps1
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GGXrdAutomaticallyChangeAudioDevice", "GGXrdAutomaticallyChangeAudioDevice\GGXrdAutomaticallyChangeAudioDevice.vcxproj", "{7E1D9B2F-D2E9-4B6B-8B14-EF5FF4B36468}"

@@ -1,1 +1,3 @@
 # GGXrdAutomaticallyChangeAudioDevice
+
+**THIS IS A WORK IN PROGRESS. SO FAR, IT HAS FAILED WHAT IT SET OUT TO DO**
