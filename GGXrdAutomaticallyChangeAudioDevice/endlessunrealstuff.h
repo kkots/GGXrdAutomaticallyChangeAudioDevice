@@ -426,7 +426,7 @@ struct UAudioDeviceData : public UObjectData {
 
 typedef char undefined;
 
-struct FMatrix { /* must be aligned on 16 bytes. Defacto seems to be aligned on 32 bytes */
+struct FMatrix { /* must be aligned on 16 bytes. De facto seems to be aligned on 32 bytes */
     float u[4][4];
 };
 

@@ -43,6 +43,12 @@ Visual Studio Community Edition 2022 calls groups of projects "solutions". To co
 
 You need to download Microsoft DirectX SDK (June 2010), go into its `\Include` folder and copy everything into here `<SOLUTION_FOLDER>\dx9sdk\Include\`. The SOLUTION_FOLDER is the one where the GGXrdAutomaticallyChangeAudioDevice.sln file is located. We're not distributing these header files because the license on the old DirectX SDK only permits the licensee to distribute the redistributable files (some DLLs that were explicitly intended to be redistributed).
 
+The SampleXAudio2_9 project requires you to install the following NuGet packages:
+- directxtk_desktop_win10
+- directxtk_uwp
+- Microsoft.XAudio2.Redist
+Use Tools - NuGet Package Manager - Manage NuGet Packages For Solution. Click Browse on the top-left. Find the first package and select it. On the right, check the SampleXAudio2_9 project. Click Install. Repeat this for the other two packages.
+
 Then you should be able to select the build configuration: Release, x86 at the top. Then Build - Build Solution.
 
 ## How to compile this project on Linux

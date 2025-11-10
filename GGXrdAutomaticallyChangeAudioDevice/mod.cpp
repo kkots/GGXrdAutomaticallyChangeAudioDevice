@@ -473,7 +473,10 @@ void UXAudio2Device::onDeviceChanged(XAUDIO2_DEVICE_DETAILS* newDeviceDetails) {
 		if (source->Playing && !source->Paused) {
 			source->Source->Start(0);
 		}
-		source->XAudio2Buffers[info.bufferIndex].PlayBegin = 0;
+		source->XAudio2Buffers[info.bufferIndex].PlayBegin = 0;  // I suspect a better solution would be to leave this non-0, and instead patch FXAudio2SoundSource::ReadMorePCMData so it sets this to 0.
+		// Reasoning for this is if you change audio device again,
+		// we might find the old PlayBegin, that we set, useful to calculate
+		// the correct position of the playhead
 	}
 	XAudio2->StartEngine();
 }
@@ -485,11 +488,11 @@ bool sigscanDetails(void* returnAddr, void* InitHardwareReturnAddr) {
 		"\x51\x56\x57\x33\xff", "xxxxx");
 	if (!InitHardware) return false;
 	
-	// a1 ?? ?? ?? ?? 8b 08 8b 51 10 68 b0 5b b3 01 57 50 ff d2 85 c0 75 dd 8b 35 ?? ?? ?? ?? b8 02 00 00 00 66 a3 ?? ?? ?? ?? c7 05 ?? ?? ?? ?? 03 00 00 00
-	static const char sigDeviceDetails[] { "\xa1\x00\x00\x00\x00\x8b\x08\x8b\x51\x10\x68\xb0\x5b\xb3\x01\x57\x50\xff\xd2\x85\xc0\x75\xdd\x8b\x35\x00\x00\x00\x00\xb8\x02\x00\x00\x00\x66\xa3\x00\x00\x00\x00\xc7\x05\x00\x00\x00\x00\x03\x00\x00\x00" };
+	// a1 ?? ?? ?? ?? 8b 08 8b 51 10 68 ?? ?? ?? ?? 57 50 ff d2 85 c0 75 dd 8b 35 ?? ?? ?? ?? b8 02 00 00 00 66 a3 ?? ?? ?? ?? c7 05 ?? ?? ?? ?? 03 00 00 00
+	static const char sigDeviceDetails[] { "\xa1\x00\x00\x00\x00\x8b\x08\x8b\x51\x10\x68\x00\x00\x00\x00\x57\x50\xff\xd2\x85\xc0\x75\xdd\x8b\x35\x00\x00\x00\x00\xb8\x02\x00\x00\x00\x66\xa3\x00\x00\x00\x00\xc7\x05\x00\x00\x00\x00\x03\x00\x00\x00" };
 	uintptr_t deviceDetailsUsage = sigscan((uintptr_t)returnAddr, (uintptr_t)returnAddr + 0x80,
 		sigDeviceDetails,
-		"x????xxxxxxxxxxxxxxxxxxxx????xxxxxxx????xx????xxxx");
+		"x????xxxxxx????xxxxxxxxxx????xxxxxxx????xx????xxxx");
 	if (!deviceDetailsUsage) return false;
 	currentDeviceDetails = *(XAUDIO2_DEVICE_DETAILS**)(deviceDetailsUsage + 11);
 	
