@@ -28,7 +28,7 @@ The game uses XAudio2 2.7 for its audio. XAudio2 gets initialized at the very st
 
 ## What didn't work
 
-- Updating to XAudio 2.9. Trying to `...opt-in to WASAPI virtualized client...` didn't work, whatever that means (<(https://learn.microsoft.com/en-us/windows/win32/api/xaudio2/nf-xaudio2-ixaudio2-createmasteringvoice>). The game just wasn't changing devices at all when a new headphones were being plugged in. Similar results were demonstrated on a test app, which is actually included in this solution: SampleXAudio2_9.
+- Updating to XAudio 2.9. Trying to `...opt-in to WASAPI virtualized client...` didn't work, whatever that means (<https://learn.microsoft.com/en-us/windows/win32/api/xaudio2/nf-xaudio2-ixaudio2-createmasteringvoice>). The game just wasn't changing devices at all when a new headphones were being plugged in. Similar results were demonstrated on a test app, which is actually included in this solution: SampleXAudio2_9.
 - When the default device changes, creating a second IXAudio2 interface with its own IXAudio2MasteringVoice assigned to the new audio output device, and then trying to pipe the IXAudio2SubmixVoices of the first IXAudio2 to the IXAudio2MasteringVoice of the second IXAudio2. Microsoft explains pretty well why this crashes: (<https://learn.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-key-concepts>) `"Each XAudio2 object operates independently, [...]"` -- `"Although it is possible to create multiple XAudio2 engine objects [...], you should not pass information between their respective graphs"`.
 
 ## What we haven't tried
