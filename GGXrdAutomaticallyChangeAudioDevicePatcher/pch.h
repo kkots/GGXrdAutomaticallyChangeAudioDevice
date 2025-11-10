@@ -7,7 +7,16 @@
 #ifndef PCH_H
 #define PCH_H
 
-// add headers that you want to pre-compile here
+#ifndef FOR_LINUX
 #include "framework.h"
+#else
+typedef unsigned int DWORD;  // long (that's right, just long, not long long) is 8 bytes on g++, so we use int
+typedef unsigned short WORD;
+typedef unsigned char BYTE;
+typedef void* LPVOID;
+typedef unsigned long long ULONG_PTR;
+typedef unsigned char* PBYTE;
+typedef signed int LONG;
+#endif
 
 #endif //PCH_H

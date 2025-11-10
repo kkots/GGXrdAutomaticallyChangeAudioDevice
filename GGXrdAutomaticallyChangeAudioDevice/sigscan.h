@@ -2,6 +2,9 @@
 #include "pch.h"
 
 uintptr_t sigscan(uintptr_t start, uintptr_t end, const char* sig, const char* mask);
+uintptr_t sigscanBoyerMooreHorspool(uintptr_t start, uintptr_t end, const char* sig, size_t sigLength);
+// for finding function starts
+uintptr_t sigscanBackwards16ByteAligned(uintptr_t startBottom, uintptr_t endTop, const char* sig, const char* mask);
 
 /// <summary>
 /// Finds the address which holds a pointer to a function with the given name imported from the given DLL,

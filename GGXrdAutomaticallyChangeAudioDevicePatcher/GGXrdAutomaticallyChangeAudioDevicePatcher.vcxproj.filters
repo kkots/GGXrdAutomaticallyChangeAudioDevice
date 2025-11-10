@@ -76,4 +76,7 @@
   <ItemGroup>
     <None Include="prebuild.ps1" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>

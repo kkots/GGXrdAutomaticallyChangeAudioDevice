@@ -8,17 +8,12 @@
 #include "InjectorCommonOut.h"
 #include <commdlg.h>
 #else
+#include <unistd.h>
 #include <fstream>
 #include <string.h>
 #include <stdint.h>
 #endif
 #include <vector>
-#include <atlbase.h>
-#include <objbase.h>
-#define INITGUID 1
-#include <mmdeviceapi.h>
-#include <mmreg.h>
-#include <Functiondiscoverykeys_devpkey.h>
 
 #ifndef FOR_LINUX
 InjectorCommonOut outputObject;
@@ -28,6 +23,13 @@ InjectorCommonOut outputObject;
 #define CrossPlatformText(txt) L##txt
 #define CrossPlatformCout outputObject
 #define CrossPlatformNumberToString std::to_wstring
+#define CrossPlatformStringCopy wcscpy_s
+#define SEPARATOR_CHAR L'\\'
+#define SEPARATOR_CHAR_AS_STRING L"\\"
+#define SPRINTF swprintf_s
+#define CrossPlatformStringLen wcslen
+#define CrossPlatformStringFmt L"%ls"
+#define CrossPlatformStringCompareCaseInsensitive _stricmp
 #else
 #define CrossPlatformString std::string
 #define CrossPlatformChar char
@@ -35,7 +37,160 @@ InjectorCommonOut outputObject;
 #define CrossPlatformText(txt) txt
 #define CrossPlatformCout std::cout
 #define CrossPlatformNumberToString std::to_string
+#define strcpy_s(dst, dst_size, src) strcpy(dst, src)
+#define CrossPlatformStringCopy strcpy_s
+#ifndef MAX_PATH
+#define MAX_PATH 10000
+#endif
+#define SEPARATOR_CHAR '/'
+#define SEPARATOR_CHAR_AS_STRING "/"
 typedef unsigned int DWORD;
+#define SPRINTF sprintf
+#define CrossPlatformStringLen strlen
+#define CrossPlatformStringFmt "%s"
+#define CrossPlatformStringCompareCaseInsensitive stricmp
+
+int stricmp(const char* left, const char* right) {
+	while (true) {
+		char leftLower = tolower(*left);
+		char rightLower = tolower(*right);
+		if (leftLower == rightLower) {
+			if (leftLower == 0) return 0;
+			++left;
+			++right;
+			continue;
+		}
+		return leftLower - rightLower;
+	}
+}
+
+#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
+
+typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
+    WORD   e_magic;                     // Magic number
+    WORD   e_cblp;                      // Bytes on last page of file
+    WORD   e_cp;                        // Pages in file
+    WORD   e_crlc;                      // Relocations
+    WORD   e_cparhdr;                   // Size of header in paragraphs
+    WORD   e_minalloc;                  // Minimum extra paragraphs needed
+    WORD   e_maxalloc;                  // Maximum extra paragraphs needed
+    WORD   e_ss;                        // Initial (relative) SS value
+    WORD   e_sp;                        // Initial SP value
+    WORD   e_csum;                      // Checksum
+    WORD   e_ip;                        // Initial IP value
+    WORD   e_cs;                        // Initial (relative) CS value
+    WORD   e_lfarlc;                    // File address of relocation table
+    WORD   e_ovno;                      // Overlay number
+    WORD   e_res[4];                    // Reserved words
+    WORD   e_oemid;                     // OEM identifier (for e_oeminfo)
+    WORD   e_oeminfo;                   // OEM information; e_oemid specific
+    WORD   e_res2[10];                  // Reserved words
+    LONG   e_lfanew;                    // File address of new exe header
+  } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
+  
+typedef struct _IMAGE_DATA_DIRECTORY {
+    DWORD   VirtualAddress;
+    DWORD   Size;
+} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+
+typedef struct _IMAGE_OPTIONAL_HEADER {
+    //
+    // Standard fields.
+    //
+
+    WORD    Magic;
+    BYTE    MajorLinkerVersion;
+    BYTE    MinorLinkerVersion;
+    DWORD   SizeOfCode;
+    DWORD   SizeOfInitializedData;
+    DWORD   SizeOfUninitializedData;
+    DWORD   AddressOfEntryPoint;
+    DWORD   BaseOfCode;
+    DWORD   BaseOfData;
+
+    //
+    // NT additional fields.
+    //
+
+    DWORD   ImageBase;
+    DWORD   SectionAlignment;
+    DWORD   FileAlignment;
+    WORD    MajorOperatingSystemVersion;
+    WORD    MinorOperatingSystemVersion;
+    WORD    MajorImageVersion;
+    WORD    MinorImageVersion;
+    WORD    MajorSubsystemVersion;
+    WORD    MinorSubsystemVersion;
+    DWORD   Win32VersionValue;
+    DWORD   SizeOfImage;
+    DWORD   SizeOfHeaders;
+    DWORD   CheckSum;
+    WORD    Subsystem;
+    WORD    DllCharacteristics;
+    DWORD   SizeOfStackReserve;
+    DWORD   SizeOfStackCommit;
+    DWORD   SizeOfHeapReserve;
+    DWORD   SizeOfHeapCommit;
+    DWORD   LoaderFlags;
+    DWORD   NumberOfRvaAndSizes;
+    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
+
+typedef struct _IMAGE_FILE_HEADER {
+    WORD    Machine;
+    WORD    NumberOfSections;
+    DWORD   TimeDateStamp;
+    DWORD   PointerToSymbolTable;
+    DWORD   NumberOfSymbols;
+    WORD    SizeOfOptionalHeader;
+    WORD    Characteristics;
+} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
+
+typedef struct _IMAGE_NT_HEADERS {
+    DWORD Signature;
+    IMAGE_FILE_HEADER FileHeader;
+    IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
+
+typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
+
+typedef IMAGE_NT_HEADERS32     IMAGE_NT_HEADERS;
+
+#define IMAGE_SIZEOF_SHORT_NAME 8
+
+typedef struct _IMAGE_SECTION_HEADER {
+    BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];
+    union {
+            DWORD   PhysicalAddress;
+            DWORD   VirtualSize;
+    } Misc;
+    DWORD   VirtualAddress;
+    DWORD   SizeOfRawData;
+    DWORD   PointerToRawData;
+    DWORD   PointerToRelocations;
+    DWORD   PointerToLinenumbers;
+    WORD    NumberOfRelocations;
+    WORD    NumberOfLinenumbers;
+    DWORD   Characteristics;
+} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
+
+#define IMAGE_FIRST_SECTION( ntheader ) ((PIMAGE_SECTION_HEADER)        \
+    ((ULONG_PTR)(ntheader) +                                            \
+     FIELD_OFFSET( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
+     ((ntheader))->FileHeader.SizeOfOptionalHeader   \
+    ))
+    
+#define IMAGE_REL_BASED_ABSOLUTE 0
+#define IMAGE_REL_BASED_HIGH 1
+#define IMAGE_REL_BASED_LOW 2
+#define IMAGE_REL_BASED_HIGHLOW 3
+#define IMAGE_REL_BASED_HIGHADJ 4
+#define IMAGE_REL_BASED_DIR64 10
+
+#define FIELD_OFFSET offsetof
+    
+#define IMAGE_DIRECTORY_ENTRY_IMPORT 1
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC 5
 #endif
 
 #if defined( _WIN64 )
@@ -52,24 +207,45 @@ typedef PIMAGE_NT_HEADERS nthdr;
 nthdr pNtHeader = nullptr;
 BYTE* fileBase = nullptr;
 
+#ifndef FOR_LINUX
 extern void GetLine(CrossPlatformString& line);
+#else
+void GetLine(std::string& line) {
+	std::getline(std::cin, line);
+}
+void OutputStringA(const char* str) {
+	std::cout << str;
+}
+void OutputStringW(const wchar_t* str) {
+	std::wcout << str;
+}
+#endif
+void pesterAboutCopyingDll(const CrossPlatformString& szFile);
+
+#ifdef FOR_LINUX
+void copyFileLinux(const std::string& pathSource, const std::string& pathDestination);
+#endif
+
+bool crossPlatformFileCopy(const CrossPlatformString& dst, const CrossPlatformString& src,
+		const CrossPlatformChar* successMsg,
+		const CrossPlatformChar* errorMsg) {
+    bool success = true;
+    #ifndef FOR_LINUX
+    if (!CopyFileW(src.c_str(), dst.c_str(), true)) {
+        CrossPlatformCout << errorMsg;
+    	CrossPlatformString ignoreLine;
+    	GetLine(ignoreLine);
+    	success = false;
+    }
+    #else
+    copyFileLinux(src, dst);
+    std::cout << "Backup copy created successfully.\n";
+    #endif
+    CrossPlatformCout << successMsg;
+    return success;
+}
 
 char exeName[] = "\x3d\x6b\x5f\x62\x6a\x6f\x3d\x5b\x57\x68\x4e\x68\x5a\x24\x5b\x6e\x5b\xf6";
-
-bool hasAtLeastOneBackslash(const CrossPlatformString& path) {
-    
-    for (auto it = path.cbegin(); it != path.cend(); ++it) {
-        if (*it == (CrossPlatformChar)'\\') return true;
-    }
-    return false;
-}
-
-CrossPlatformChar determineSeparator(const CrossPlatformString& path) {
-    if (hasAtLeastOneBackslash(path)) {
-        return (CrossPlatformChar)'\\';
-    }
-    return (CrossPlatformChar)'/';
-}
 
 int findLast(const CrossPlatformString& str, CrossPlatformChar character) {
     if (str.empty()) return -1;
@@ -86,7 +262,7 @@ int findLast(const CrossPlatformString& str, CrossPlatformChar character) {
 // Does not include trailing slash
 CrossPlatformString getParentDir(const CrossPlatformString& path) {
     CrossPlatformString result;
-    int lastSlashPos = findLast(path, determineSeparator(path));
+    int lastSlashPos = findLast(path, SEPARATOR_CHAR);
     if (lastSlashPos == -1) return result;
     result.insert(result.begin(), path.cbegin(), path.cbegin() + lastSlashPos);
     return result;
@@ -94,7 +270,7 @@ CrossPlatformString getParentDir(const CrossPlatformString& path) {
 
 CrossPlatformString getFileName(const CrossPlatformString& path) {
     CrossPlatformString result;
-    int lastSlashPos = findLast(path, determineSeparator(path));
+    int lastSlashPos = findLast(path, SEPARATOR_CHAR);
     if (lastSlashPos == -1) return path;
     result.insert(result.begin(), path.cbegin() + lastSlashPos + 1, path.cend());
     return result;
@@ -238,17 +414,6 @@ std::string repeatCharNTimes(char charToRepeat, int times) {
     std::string result;
     result.resize(times, charToRepeat);
     return result;
-}
-
-bool writeStringToFile(FILE* file, size_t pos, const std::string& stringToWrite, char* fileLocationInRam) {
-    memcpy(fileLocationInRam, stringToWrite.c_str(), stringToWrite.size() + 1);
-    fseek(file, (long)pos, SEEK_SET);
-    size_t writtenBytes = fwrite(stringToWrite.c_str(), 1, stringToWrite.size() + 1, file);
-    if (writtenBytes != stringToWrite.size() + 1) {
-        CrossPlatformPerror(CrossPlatformText("Error writing to file"));
-        return false;
-    }
-    return true;
 }
 
 int calculateRelativeCall(DWORD callInstructionAddress, DWORD calledAddress) {
@@ -736,11 +901,11 @@ int findImportedFunction(const char* dll, const char* function) {
 	const ImageImportDescriptor* importPtrNext = (const ImageImportDescriptor*)(rvaToPtr(
 		pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress
 	));
-	for (; importsSize > 0; importsSize -= sizeof ImageImportDescriptor) {
+	for (; importsSize > 0; importsSize -= sizeof (ImageImportDescriptor)) {
 		const ImageImportDescriptor* importPtr = importPtrNext++;
 		if (!importPtr->ImportLookupTableRVA) break;
 		const char* dllName = (const char*)(rvaToPtr(importPtr->NameRVA));
-		if (_stricmp(dllName, dll) != 0) continue;
+		if (CrossPlatformStringCompareCaseInsensitive(dllName, dll) != 0) continue;
 		DWORD* funcPtr = (DWORD*)(rvaToPtr(importPtr->ImportAddressTableRVA));
 		DWORD* imageImportByNameRvaPtr = (DWORD*)(rvaToPtr(importPtr->ImportLookupTableRVA));
 		struct ImageImportByName {
@@ -762,12 +927,77 @@ int findImportedFunction(const char* dll, const char* function) {
 	return -1;
 }
 
+void pesterAboutCopyingDll(const CrossPlatformString& szFile) {
+	
+	while (true) {
+		
+		static const CrossPlatformChar* dllNameWithSlash =
+			SEPARATOR_CHAR_AS_STRING
+			CrossPlatformText("GGXrdAutomaticallyChangeAudioDevice.dll");
+		static const CrossPlatformChar* dllName = dllNameWithSlash + 1;
+		int pos;
+		
+		CrossPlatformChar dllPathThis[MAX_PATH];
+		bool linuxFuckup = false;
+		#ifdef FOR_LINUX
+		ssize_t readlink_returnValue = readlink("/proc/self/exe", dllPathThis, MAX_PATH);
+		if (readlink_returnValue == -1) {
+			perror("Failed to read /proc/self/exe, which was recommended on stackoverflow as the way to read where this program is located."
+				" Plan B is to use the working directory, strap in.\n");
+			linuxFuckup = true;
+		}
+		#else
+		GetModuleFileNameW(NULL, dllPathThis, MAX_PATH);
+		#endif
+		if (!linuxFuckup) {
+			pos = findLast(dllPathThis, SEPARATOR_CHAR);
+			if (pos == -1) return;
+			dllPathThis[pos] = CrossPlatformText('\0');
+			size_t thisLen = CrossPlatformStringLen(dllPathThis);
+			CrossPlatformStringCopy(dllPathThis + thisLen, MAX_PATH - thisLen, dllNameWithSlash);
+		} else {
+			memcpy(dllPathThis, dllName, sizeof dllName);
+		}
+		
+		
+		CrossPlatformString dllPathOther = szFile;
+		pos = findLast(dllPathOther, SEPARATOR_CHAR);
+		if (pos == -1) return;
+		dllPathOther.resize(pos);
+		dllPathOther += dllNameWithSlash;
+		
+		if (fileExists(dllPathOther.c_str())) return;
+		
+		CrossPlatformCout << CrossPlatformText("\n\nIt looks like the game doesn't have the ")
+			<< dllName << CrossPlatformText("in its Binaries\\Win32 directory."
+				" Without this file, it will not launch. Do you want to copy it over now?")
+				<< std::endl;
+		CrossPlatformCout << CrossPlatformText("Please enter a 'y' or a 'n':") << std::endl;
+		
+	    CrossPlatformString yesNo;
+	    GetLine(yesNo);
+	    
+	    if (yesNo == CrossPlatformText("y") || yesNo == CrossPlatformText("Y")) {
+	    	crossPlatformFileCopy(dllPathOther, dllPathThis,
+	    		CrossPlatformText("Copied DLL successfully.\n"),
+	    		CrossPlatformText("Failed to copy the DLL to the game's directory."
+	    		" Press Enter to continue. Please copy the file manually."));
+	    	return;
+	    } else if (yesNo == CrossPlatformText("n") || yesNo == CrossPlatformText("N")) {
+	    	return;
+	    } else {
+	    	CrossPlatformCout << "Please type a 'y' or a 'n', without quotes.\n";
+	    }
+		
+	}
+}
+
 void meatOfTheProgram() {
     CrossPlatformString ignoreLine;
 	#ifndef FOR_LINUX
     CrossPlatformCout << CrossPlatformText("Please select a path to your ") << exeName << CrossPlatformText(" file that will be patched...\n");
 	#else
-	CrossPlatformCout << CrossPlatformText("Please type in/paste a path to your ") << exeName << CrossPlatformText(" file"
+	CrossPlatformCout << CrossPlatformText("Please type in/paste/drag-n-drop a path to your ") << exeName << CrossPlatformText(" file"
 		" (including the file name and extension) that will be patched...\n");
 	#endif
 
@@ -828,7 +1058,6 @@ void meatOfTheProgram() {
     #endif
     CrossPlatformCout << "Selected file: " << szFile.c_str() << std::endl;
 
-    CrossPlatformChar separator = determineSeparator(szFile);
     CrossPlatformString fileName = getFileName(szFile);
     CrossPlatformString parentDir = getParentDir(szFile);
 	
@@ -841,11 +1070,23 @@ void meatOfTheProgram() {
 	CrossPlatformString fileNameNoDot(fileName.begin(), fileName.begin() + dotPos);
 	
 	CrossPlatformChar strbuf[1024];
-	int len = swprintf_s(strbuf, L"%ls\\%ls_backup%ls", parentDir.data(), fileNameNoDot.data(), fileName.data() + dotPos);
+	int len = SPRINTF(strbuf,
+			CrossPlatformStringFmt
+			SEPARATOR_CHAR_AS_STRING
+			CrossPlatformStringFmt
+			CrossPlatformText("_backup")
+			CrossPlatformStringFmt,
+		parentDir.data(), fileNameNoDot.data(), fileName.data() + dotPos);
 	
     int backupNameCounter = 1;
     while (fileExists(strbuf)) {
-    	len = swprintf_s(strbuf, L"%ls\\%ls_backup%d%ls", parentDir.data(), fileNameNoDot.data(), backupNameCounter, fileName.data() + dotPos);
+    	len = SPRINTF(strbuf,
+    			CrossPlatformStringFmt
+    			SEPARATOR_CHAR_AS_STRING
+    			CrossPlatformStringFmt
+    			CrossPlatformText("_backup%d")
+    			CrossPlatformStringFmt,
+    		parentDir.data(), fileNameNoDot.data(), backupNameCounter, fileName.data() + dotPos);
         ++backupNameCounter;
     }
     
@@ -935,17 +1176,10 @@ void meatOfTheProgram() {
 	
 	fclose(file);
 	
-    #ifndef FOR_LINUX
-    if (!CopyFileW(szFile.c_str(), backupFilePath.c_str(), true)) {
-        std::wcout << "Failed to create a backup copy. Do you want to continue anyway? You won't be able to revert the file to the original. Press Enter to agree...\n";
-    	GetLine(ignoreLine);
-    } else {
-        std::wcout << "Backup copy created successfully.\n";
-    }
-    #else
-    copyFileLinux(szFile, backupFilePath);
-    std::wcout << "Backup copy created successfully.\n";
-    #endif
+	if (!crossPlatformFileCopy(backupFilePath, szFile,
+		CrossPlatformText("Backup copy created successfully.\n"),
+		CrossPlatformText("Failed to create a backup copy. Do you want to continue anyway?"
+        	" You won't be able to revert the file to the original. Press Enter to agree...\n"))) return;
 	
 	if (!crossPlatformOpenFile(&file, szFile.c_str())) return;
 	
@@ -975,66 +1209,17 @@ void meatOfTheProgram() {
     CrossPlatformCout << "Patched successfully\n";
 	
     fclose(file);
-
+	
+	pesterAboutCopyingDll(szFile);
+	
 }
 
+#ifdef FOR_LINUX
+int main()
+#else
 int patcherMain()
+#endif
 {
-	
-	CoInitialize(0);
-	{
-		static const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-		static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
-		CComPtr<IMMDeviceEnumerator> deviceEnumerator;
-		HRESULT hr;
-		hr = CoCreateInstance(
-	         CLSID_MMDeviceEnumerator, NULL,
-	         CLSCTX_ALL, IID_IMMDeviceEnumerator,
-	         (void**)&deviceEnumerator);
-		if (hr == S_OK) {
-			CComPtr<IMMDeviceCollection> deviceCollection;
-			hr = deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &deviceCollection);
-			if (hr == S_OK) {
-				UINT count;
-				hr = deviceCollection->GetCount(&count);
-				if (hr == S_OK) {
-					for (UINT i = 0; i < count; ++i) {
-						CComPtr<IMMDevice> device;
-						hr = deviceCollection->Item(i, &device);
-						if (hr == S_OK) {
-							LPWSTR deviceId;
-							HRESULT hr2 = device->GetId(&deviceId);
-							CComPtr<IPropertyStore> propertyStore;
-							hr = device->OpenPropertyStore(STGM_READ, &propertyStore);
-							if (hr == S_OK) {
-								WAVEFORMATEX waveFormat;
-								PROPVARIANT propertyValue;
-								hr = propertyStore->GetValue(PKEY_AudioEngine_DeviceFormat, &propertyValue);
-								if (SUCCEEDED(hr)) {
-									memcpy(&waveFormat, propertyValue.blob.pBlobData, propertyValue.blob.cbSize);
-								}
-								PROPVARIANT friendlyName;
-								HRESULT hr3 = propertyStore->GetValue(PKEY_Device_FriendlyName, &friendlyName);
-								if (SUCCEEDED(hr3)) {
-									int lol = 1;
-									PropVariantClear(&friendlyName);
-								}
-								if (SUCCEEDED(hr)) {
-									PropVariantClear(&propertyValue);
-								}
-							}
-							if (hr2 == S_OK) {
-								CoTaskMemFree(deviceId);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	CoUninitialize();
-	
-	
 	#ifndef FOR_LINUX
 	int offset = (int)(
 		(GetTickCount64() & 0xF000000000000000ULL) >> (63 - 4)

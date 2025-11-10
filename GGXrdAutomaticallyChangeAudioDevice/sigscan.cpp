@@ -15,6 +15,53 @@ uintptr_t sigscan(uintptr_t start, uintptr_t end, const char* sig, const char* m
 	return 0;
 }
 
+uintptr_t sigscanBoyerMooreHorspool(uintptr_t start, uintptr_t end, const char* sig, size_t sigLength) {
+	
+	// Boyer-Moore-Horspool substring search
+	// A table containing, for each symbol in the alphabet, the number of characters that can safely be skipped
+	const int stepCount = 256;
+	size_t step[stepCount];
+	for (int i = 0; i < stepCount; ++i) {
+		step[i] = sigLength;
+	}
+	for (size_t i = 0; i < sigLength - 1; i++) {
+		step[(BYTE)sig[i]] = sigLength - 1 - i;
+	}
+	
+	BYTE pNext;
+	end -= sigLength;
+	for (uintptr_t p = start; p <= end; p += step[pNext]) {
+		int j = sigLength - 1;
+		pNext = *(BYTE*)(p + j);
+		if (sig[j] == (char)pNext) {
+			for (--j; j >= 0; --j) {
+				if (sig[j] != *(char*)(p + j)) {
+					break;
+				}
+			}
+			if (j < 0) {
+				return p;
+			}
+		}
+	}
+
+	return 0;
+}
+
+// for finding function starts
+uintptr_t sigscanBackwards16ByteAligned(uintptr_t startBottom, uintptr_t endTop, const char* sig, const char* mask) {
+	uintptr_t lastScan = endTop;
+	for (uintptr_t addr = (startBottom - strlen(mask) + 1) & 0xFFFFFFF0; addr >= lastScan; addr-=16) {
+		for (size_t i = 0;; i++) {
+			if (mask[i] == '\0')
+				return addr;
+			if (mask[i] != '?' && sig[i] != *(char*)(addr + i))
+				break;
+		}
+	}
+	return 0;
+}
+
 /// <summary>
 /// Finds the address which holds a pointer to a function with the given name imported from the given DLL,
 /// in a given 32-bit portable executable file.
